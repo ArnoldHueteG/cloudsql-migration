@@ -1,0 +1,5 @@
+config/migrate.csv   # names of rds instances
+config/overrides.sql # sql to update config db
+config/projects.csv  # gcp project names
+config/secrets.csv   # k8s secret metadata
+kubernetes-archive-keyring.gpg

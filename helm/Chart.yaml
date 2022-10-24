@@ -1,0 +1,8 @@
+apiVersion: v1
+description: cloudsql migration helper
+name: cloudsql-migration
+version: 0.0.1
+sources:
+  - https://github.com/4ut0n0m1c-41/cloudsql-migration
+maintainers:
+  - name: Marc Spehlmann

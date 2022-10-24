@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Values.app }}
+    release: {{ .Values.app }}
+    4ut0n0m1c.41/team: accounts-identity
+    sidecar.istio.io/inject: "false"
+  name: {{ .Values.app }}
+  namespace: {{ .Values.namespace }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: {{ .Values.app }}
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+      - name: cloudsql-migration
+        imagePullPolicy: Always
+        {{- $ci_proj := "prj-ci-accounts-identity-c587" }}
+        {{- $reg_url := ( printf "us-west1-docker.pkg.dev/%s" $ci_proj ) }}
+        {{- if (eq $.Values.environment "gke-dev") }}
+        image: "{{ $reg_url }}/non-release/au/{{ $.Values.app }}:{{ $.Values.image.tag }}"
+        {{- else }}
+        image: "{{ $reg_url }}/release/au/{{ $.Values.app }}:{{ $.Values.image.tag }}"
+        {{- end }}
+        command: ["python3","server.py"]
+        args: []
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 500m
+            memory: 512Mi
+        env:
+        - name: DEBUG
+          value: {{ quote .Values.debug }}
+        livenessProbe:
+          httpGet:
+            path: /tasks
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 5
+          timeoutSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /tasks
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 5
+          timeoutSeconds: 3
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: {{ .Values.app }}
+      serviceAccountName: {{ .Values.app }}
+      terminationGracePeriodSeconds: 30

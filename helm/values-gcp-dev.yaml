@@ -1,0 +1,3 @@
+gcp:
+  sa: sa-d-cloudsql-migration-sa@prj-d-gke-3e34.iam.gserviceaccount.com
+debug: TRUE

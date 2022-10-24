@@ -1,0 +1,11 @@
+dependencies:
+- name: base
+  version: "^3.x"
+  repository: "alias:au"
+  import-values:
+  - child: environments
+    parent: imported.environments
+  - child: docker
+    parent: imported.docker
+  - child: au
+    parent: imported.au

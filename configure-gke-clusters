@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+cleanup_cluster_config() {
+  local cluster=$1
+  while read -r context_name cluster_name authinfo ; do
+    echo "cluster_name=$cluster_name context_name=$context_name"
+    kubectl config get-clusters | grep "$cluster_name" && kubectl config delete-cluster $cluster_name
+    kubectl config delete-context $context_name
+  done < <(kubectl config get-contexts | grep $cluster | tr -d '*')
+
+}
+
+cat <<EOF
+
+This script will setup a context for all of the gke project based clusters you have access to.
+We're looking in the following projects for gke clusters to setup:
+
+$(gcloud projects list | grep gke | awk '{print $2}')
+EOF
+
+while read -r proj_id proj_name proj_num ; do
+  echo
+  echo "Project($proj_name) ID=$proj_id Number=${proj_num}"
+  while read -r cluster location k8s_version master_ip details ; do
+    echo "  Cluster($cluster) Location=${location} Version=${k8s_version} MasterIp=$master_ip"
+    echo "      https://console.cloud.google.com/kubernetes/clusters/details/${location}/${cluster}?project=${proj_id}"
+    cleanup_cluster_config "$cluster" >/dev/null 2>&1
+    gcloud container clusters get-credentials "$cluster" --region "$location" --project "$proj_id" >/dev/null 2>&1 || continue
+    kubectl config rename-context "gke_${proj_id}_${location}_${cluster}" "$cluster" >/dev/null 2>&1
+  done < <(gcloud container clusters list --project "$proj_id" 2>/dev/null | grep -v NAME)
+done < <(gcloud projects list | grep gke)
+
+cat <<EOF
+
+You have the following GKE contexts available:
+
+$(kubectx | grep gke)
+
+Use "kubectx <cluster-name>" to configure your kubectl context.
+
+EOF

@@ -1,0 +1,4 @@
+dev: gke-d-tmc-01
+staging: gke-s-tmc-01
+sb1: gke-sb1-tmc-01
+prod: gke-p-tmc-01
